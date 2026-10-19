@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Payment successful{% endblock %}
+{% block content %}
+<div class="center">
+  <h1>🎉 Payment successful!</h1>
+  <p>You paid <b>${{ "%.2f"|format(tx.amount) }}</b> for <b>{{ product.name }}</b>.</p>
+  <p>Bill number: {{ tx.bill_number }}</p>
+  <a class="btn" href="{{ url_for('home') }}">Continue shopping</a>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Pay with KHQR{% endblock %}
+{% block content %}
+<div class="center">
+  <h2>Scan to pay ${{ "%.2f"|format(tx.amount) }}</h2>
+  <p>{{ product.name }} &middot; Bill {{ tx.bill_number }}</p>
+  <img class="qr" src="{{ qr_image }}" alt="KHQR code">
+  <p class="status" id="status">Waiting for payment...</p>
+  <p>Time left: <span id="timer">10:00</span></p>
+  <button class="btn secondary" onclick="checkPayment()">I have paid</button>
+</div>
+
+<script>
+  const checkUrl = "{{ url_for('check_payment', md5=tx.md5) }}";
+  const successUrl = "{{ url_for('success', md5=tx.md5) }}";
+  const statusEl = document.getElementById("status");
+  let secondsLeft = 10 * 60;
+
+  async function checkPayment() {
+    try {
+      const res = await fetch(checkUrl);
+      const data = await res.json();
+      if (data.status === "PAID") {
+        window.location = successUrl;
+      } else if (data.status === "SCANNED") {
+        statusEl.textContent = "QR scanned, waiting for confirmation...";
+      } else if (data.status === "EXPIRED") {
+        statusEl.textContent = "QR expired. Please go back and try again.";
+        stop();
+      } else if (data.error) {
+        statusEl.textContent = "Error: " + data.error;
+      }
+    } catch (e) {
+      statusEl.textContent = "Network error, retrying...";
+    }
+  }
+
+  const poll = setInterval(checkPayment, 5000);
+  const countdown = setInterval(() => {
+    secondsLeft--;
+    const m = Math.floor(secondsLeft / 60), s = secondsLeft % 60;
+    document.getElementById("timer").textContent = m + ":" + String(s).padStart(2, "0");
+    if (secondsLeft <= 0) {
+      statusEl.textContent = "Time is up. Please go back and try again.";
+      stop();
+    }
+  }, 1000);
+
+  function stop() { clearInterval(poll); clearInterval(countdown); }
+</script>
+{% endblock %}
